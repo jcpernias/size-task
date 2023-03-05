@@ -1,0 +1,58 @@
+---
+title: "Delimitación del sector público"
+author: "José Pernías"
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    toc-title: Índice
+    number-sections: true
+    number-depth: 2
+    embed-resources: true
+---
+
+## Ingresos y gastos de España
+
+### Evolución del gasto público
+
+### Gastos de las diferentes administraciones
+
+### Clasificación funcional de los gastos
+
+### Evolución de los ingresos del sector público
+
+### Impuestos 
+
+### Déficit del sector público
+
+## Comparación con otros países
+
+En esta sección utilizamos los [datos](https://data.oecd.org/government.htm){target="_blank"} datos que recopila y publica la [OECD](https://www.oecd.org){target="_blank"}. Todas las variables analizadas se miden como porcentaje con respecto al PIB.
+
+### Gastos 
+
+### Ingresos
+
+### Saldo fiscal
+
+### Deuda pública
+
+### Presión fiscal
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this 
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).

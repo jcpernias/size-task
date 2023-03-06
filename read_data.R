@@ -1,6 +1,7 @@
 library(tidyverse)
 library(openxlsx)
 
+# IGAE data: Total government
 aapp_vars <-
   tibble(row = c(7, 17, 36, 63, 64, 83),
          vname = c("Gastos", "Intereses", "Ingresos",
@@ -26,7 +27,7 @@ aapp <- local({
   pivot_wider(names_from = vnames, values_from = value)
 
 
-
+# IGAE data: Taxes
 imp_vars <-
   tibble(row = c(7, 74, 86, 95, 96, 97, 98),
          vname = c("TInd", "TRenta", "TCap", "TTotal",
@@ -44,9 +45,7 @@ imp <-
   mutate(CotSS = CotSS1 + CotSS2 + CotSS3) |>
   select(-(CotSS1:CotSS3))
 
-
-
-
+# IGAE data: COFOG
 cofog_vars <-
   tibble(row = c(7, 15, 16, 22, 29, 39, 46, 53, 60, 67, 76),
          vname = c("G01", "G01.8", "G02", "G03", "G04", "G05",
@@ -71,7 +70,7 @@ cofog <- local({
       mutate(level = "SS", vnames = cofog_vars$vname))
 
   bind_rows(df_list)
-})|>
+}) |>
   select(-c("Código", "Grupo")) |>
   rename("2021" = "2021.(P)") |>
   pivot_longer(cols = 1:27, names_to = "year") |>

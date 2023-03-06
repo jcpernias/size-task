@@ -50,31 +50,29 @@ cofog_vars <-
   tibble(row = c(7, 15, 16, 22, 29, 39, 46, 53, 60, 67, 76),
          vname = c("G01", "G01.8", "G02", "G03", "G04", "G05",
                    "G06", "G07", "G08", "G09", "G10"))
-cofog <- local({
-  df_list <- list(
-    read.xlsx("./data/COFOG.xlsx", "AA.CC.",
-              colNames = TRUE,
-              rows = c(6, cofog_vars$row)) |>
-      mutate(level = "AC", vnames = cofog_vars$vname),
-    read.xlsx("./data/COFOG.xlsx", "CC.AA.",
-              colNames = TRUE,
-              rows = c(6, cofog_vars$row)) |>
-      mutate(level = "CA", vnames = cofog_vars$vname),
-    read.xlsx("./data/COFOG.xlsx", "CC.LL.",
-              colNames = TRUE,
-              rows = c(6, cofog_vars$row)) |>
-      mutate(level = "CL", vnames = cofog_vars$vname),
-    read.xlsx("./data/COFOG.xlsx", "AA.SS.",
-              colNames = TRUE,
-              rows = c(6, cofog_vars$row)) |>
-      mutate(level = "SS", vnames = cofog_vars$vname))
 
-  bind_rows(df_list)
-}) |>
-  select(-c("Código", "Grupo")) |>
-  rename("2021" = "2021.(P)") |>
-  pivot_longer(cols = 1:27, names_to = "year") |>
-  mutate(year = as.integer(year)) |>
-  pivot_wider(names_from = c(vnames, level), names_sep = "_",
-              values_from = value)
+read_cofog <- function(level) {
+  read.xlsx("./data/COFOG.xlsx", level,
+            colNames = TRUE,
+            rows = c(6, cofog_vars$row)) |>
+    mutate(vnames = cofog_vars$vname) |>
+    select(-c("Código", "Grupo")) |>
+    rename("2021" = "2021.(P)") |>
+    pivot_longer(cols = 1:27, names_to = "year") |>
+    mutate(year = as.integer(year)) |>
+    pivot_wider(names_from = vnames, names_sep = "_",
+                values_from = value) |>
+    mutate(G01 = G01 - coalesce(G01.8, 0))  |>
+    select(-G01.8) |>
+    rowwise() |>
+    mutate(GTot = sum(c_across(G01:G10), na.rm = TRUE))
+}
 
+gov_levels <- c("AA.PP.", "AA.CC.", "CC.AA.", "CC.LL.", "AA.SS.")
+cofog <- map(set_names(gov_levels), read_cofog)
+
+sum_cofog <- bind_rows(cofog[-1]) |>
+  pivot_longer(G01:GTot) |>
+  group_by(year, name) |>
+  summarise(value = sum(value,  na.rm = TRUE), .groups = "drop") |>
+  pivot_wider(names_from = name, values_from = value)

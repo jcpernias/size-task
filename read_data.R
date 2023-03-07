@@ -5,8 +5,8 @@ library(openxlsx)
 
 aapp <- local({
   aapp_vars <-
-    tibble(row = c(7, 17, 36, 63, 64, 83),
-           vname = c("Gastos", "Intereses", "Ingresos",
+    tibble(row = c(7, 36, 43, 63, 64, 83),
+           vname = c("Ingresos", "Gastos", "Intereses",
                      "SFiscal", "SPrimario", "PIB"))
   df_list <- list(
     read.xlsx("./data/A_AAPP.xlsx", "Tabla1a",
@@ -77,3 +77,99 @@ sum_cofog <- bind_rows(cofog[-1]) |>
   group_by(year, name) |>
   summarise(value = sum(value,  na.rm = TRUE), .groups = "drop") |>
   pivot_wider(names_from = name, values_from = value)
+
+
+library(RColorBrewer)
+theme_set(theme_bw())
+
+theme_update(panel.border = element_blank(),
+             axis.line.x = element_line(linewidth = 0.2),
+             axis.line.y = element_line(linewidth = 0.2),
+             text = element_text(size = 10))
+
+line_plot <- function(data, labels = NULL) {
+  lplot <- ggplot(data, aes(x = year, y = value, color = name))  +
+    geom_line() + geom_point() +
+    labs(color = NULL) +
+    xlab("") + ylab("") +
+    scale_x_continuous(breaks = seq(1995, 2020, 5),
+                       minor_breaks = NULL)
+
+  if (is.null(labels)) {
+    lplot <- lplot + scale_color_brewer(palette = "Set2")
+  } else {
+    lplot <- lplot +
+      scale_color_brewer(palette = "Set2", labels = labels)
+  }
+
+  if (length(unique(data$name)) == 1) {
+    lplot <- lplot + theme(legend.position = "none")
+  }
+  lplot
+}
+
+## a) Gasto público
+aapp |> mutate(G = Gastos / PIB * 100) |>
+  select(year, G) |>
+  pivot_longer(G) |>
+  line_plot()
+
+
+## d) Ingresos públicos
+aapp |> mutate(R = Ingresos / PIB * 100) |>
+  select(year, R) |>
+  pivot_longer(R) |>
+  line_plot()
+
+
+left_join(aapp, imp, by = "year") |>
+  mutate(T = (TTotal + CotSS) / Ingresos * 100) |>
+  select(year, T) |>
+  pivot_longer(T) |>
+  line_plot()
+
+
+left_join(aapp, imp, by = "year") |>
+  mutate(PF = (TTotal + CotSS) / PIB * 100) |>
+  select(year, PF) |>
+  pivot_longer(PF) |>
+  line_plot()
+
+## e) Impuestos directos, indirectos y cotizaciones
+left_join(aapp, imp, by = "year") |>
+  mutate(TI = TInd / PIB * 100,
+         TD = (TRenta + TCap) / PIB * 100,
+         SS = CotSS / PIB * 100) |>
+  select(year, TI, TD, SS) |>
+  pivot_longer(c(TI, TD, SS)) |>
+  line_plot(labels = c(TI = "Impuestos Indirectos",
+                       TD = "Impuestos Directos",
+                       SS = "Cotizaciones S.S.")) +
+  theme(legend.position = "bottom")
+
+
+
+imp |> mutate(Total = TTotal + CotSS,
+              TI = TInd / Total * 100,
+              TD = (TRenta + TCap) / Total * 100,
+              SS = CotSS / Total * 100) |>
+  select(year, TI, TD, SS) |>
+  pivot_longer(c(TI, TD, SS)) |>
+  line_plot(labels = c(TI = "Impuestos Indirectos",
+                       TD = "Impuestos Directos",
+                       SS = "Cotizaciones S.S.")) +
+  theme(legend.position = "bottom")
+
+
+## f) Saldo fiscal y saldo primario
+aapp |>
+  mutate(SF = SFiscal / PIB * 100,
+         SP = SPrimario / PIB * 100) |>
+  select(year, SF, SP) |>
+  pivot_longer(c(SF, SP)) |>
+  line_plot(labels = c(SF = "Saldo Fiscal",
+                       SP = "Saldo Primario")) +
+  theme(legend.position = "bottom")
+
+
+

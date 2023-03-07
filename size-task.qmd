@@ -1,6 +1,11 @@
 ---
 title: "Delimitación del sector público"
 author: "José Pernías"
+crossref: 
+  fig-title: "Figura"      
+  tbl-title: "Tabla"  
+  title-delim: ":"     
+
 format: 
   html:
     toc: true
@@ -10,11 +15,116 @@ format:
     number-sections: true
     number-depth: 2
     embed-resources: true
+    fig-cap-location: top
+    anchor-sections: false
+    fig-width: 7
+    fig-height: 4
 ---
+
+```{r igae-data}
+#| include: false
+
+library(tidyverse)
+library(openxlsx)
+
+# Lectura de los datos de la IGAE
+
+# Gastos, ingresos y déficit de las administraciones públicas
+aapp <- local({
+  aapp_vars <-
+    tibble(row = c(7, 36, 43, 63, 64, 83),
+           vname = c("Ingresos", "Gastos", "Intereses", 
+                     "SFiscal", "SPrimario", "PIB"))
+  df_list <- list(
+    read.xlsx("./data/A_AAPP.xlsx", "Tabla1a",
+              colNames = TRUE,
+              rows = c(6, aapp_vars$row[-nrow(aapp_vars)])),
+    read.xlsx("./data/A_AAPP.xlsx", "Tabla1b",
+              colNames = TRUE,
+              rows = c(6, aapp_vars$row[nrow(aapp_vars)])) |>
+      mutate(CONCEPTOS  = as.character(CONCEPTOS)))
+
+  bind_rows(df_list)  |>
+    select(-c("CÓDIGO", "CONCEPTOS")) |>
+    mutate(vnames = aapp_vars$vname) |>
+    rename("2021" = "2021(P)") |>
+    pivot_longer(cols = 1:27, names_to = "year") |>
+    mutate(year = as.integer(year)) |>
+    pivot_wider(names_from = vnames, values_from = value)
+})
+
+# Impuestos y cotizaciones sociales
+imp <- local({
+  imp_vars <-
+    tibble(row = c(7, 74, 86, 95, 96, 97, 98),
+           vname = c("TInd", "TRenta", "TCap", "TTotal",
+                     "CotSS1", "CotSS2", "CotSS3"))
+
+  read.xlsx("./data/A_AAPP_Imp.xlsx", "Tabla1a",
+            colNames = TRUE,
+            rows = c(6, imp_vars$row)) |>
+    select(-c("CÓDIGO", "CONCEPTOS")) |>
+    mutate(vnames = imp_vars$vname) |>
+    rename("2021" = "2021(P)") |>
+    pivot_longer(cols = 1:27, names_to = "year") |>
+    mutate(year = as.integer(year)) |>
+    pivot_wider(names_from = vnames, values_from = value) |>
+    mutate(CotSS = CotSS1 + CotSS2 + CotSS3) |>
+    select(-(CotSS1:CotSS3))
+})
+
+igae <- left_join(aapp, imp, by = "year")
+```
+
+```{r ggplot-setup}
+#| include: false
+library(RColorBrewer)
+theme_set(theme_bw())
+
+theme_update(panel.border = element_blank(),
+             axis.line.x = element_line(linewidth = 0.2),
+             axis.line.y = element_line(linewidth = 0.2),
+             text = element_text(size = 10))
+
+line_plot <- function(data, labels = NULL) {
+  lplot <- ggplot(data, aes(x = year, y = value, color = name))  +
+    geom_line() + geom_point() +
+    labs(color = NULL) +
+    xlab("") + ylab("") +
+    scale_x_continuous(breaks = seq(1995, 2020, 5),
+                       minor_breaks = NULL)
+
+  if (is.null(labels)) {
+    lplot <- lplot + scale_color_brewer(palette = "Set2")
+  } else {
+    lplot <- lplot +
+      scale_color_brewer(palette = "Set2", labels = labels)
+  }
+
+  if (length(unique(data$name)) == 1) {
+    lplot <- lplot + theme(legend.position = "none")
+  }
+  lplot
+}
+```
+
 
 ## Ingresos y gastos de España
 
+En esta sección utilizamos los datos anuales proporcionados por la IGAE.
+
 ### Evolución del gasto público
+```{r}
+#| echo: false
+#| label: fig-spain-expend
+#| fig-cap: Gastos del sector público en España, 1995-2021 (% sobre PIB).
+
+igae |> mutate(G = Gastos / PIB * 100) |>
+  select(year, G) |>
+  pivot_longer(G) |>
+  line_plot()
+```
+
 
 ### Gastos de las diferentes administraciones
 
@@ -22,37 +132,156 @@ format:
 
 ### Evolución de los ingresos del sector público
 
+```{r}
+#| echo: false
+#| label: fig-spain-rev
+#| fig-cap: Ingresos del sector público en España, 1995-2021 (% sobre PIB).
+
+igae |> mutate(R = Ingresos / PIB * 100) |>
+  select(year, R) |>
+  pivot_longer(R) |>
+  line_plot()
+```
+
+
+```{r}
+#| echo: false
+#| label: fig-spain-taxes
+#| fig-cap: Impuestos y cotizaciones sociales en España, 1995-2021 (% sobre total de ingresos).
+
+igae |> mutate(T = (TTotal + CotSS) / Ingresos * 100) |>
+  select(year, T) |>
+  pivot_longer(T) |>
+  line_plot()
+```
+
+```{r}
+#| echo: false
+#| label: fig-spain-press
+#| fig-cap: Presión fiscal en España, 1995-2021 (% sobre PIB).
+igae |> mutate(PF = (TTotal + CotSS) / PIB * 100) |>
+  select(year, PF) |>
+  pivot_longer(PF) |>
+  line_plot()
+```
+
+
 ### Impuestos 
 
+```{r}
+#| echo: false
+#| label: fig-spain-tax-types
+#| fig-cap: Impuestos directos, indirectos y cotizaciones sociales en España, 1995-2021 (% sobre PIB).
+
+igae |>
+  mutate(TI = TInd / PIB * 100,
+         TD = (TRenta + TCap) / PIB * 100,
+         SS = CotSS / PIB * 100) |>
+  select(year, TI, TD, SS) |>
+  pivot_longer(c(TI, TD, SS)) |>
+  line_plot(labels = c(TI = "Impuestos Indirectos",
+                       TD = "Impuestos Directos",
+                       SS = "Cotizaciones S.S.")) +
+  theme(legend.position = "bottom")
+```
+
 ### Déficit del sector público
+
+```{r}
+#| echo: false
+#| label: fig-spain-deficit
+#| fig-cap: Saldo fiscal y saldo primario en España, 1995-2021 (% sobre PIB).
+igae |>
+  mutate(SF = SFiscal / PIB * 100,
+         SP = SPrimario / PIB * 100) |>
+  select(year, SF, SP) |>
+  pivot_longer(c(SF, SP)) |>
+  line_plot(labels = c(SF = "Saldo Fiscal",
+                       SP = "Saldo Primario")) +
+  theme(legend.position = "bottom")
+```
 
 ## Comparación con otros países
 
 En esta sección utilizamos los [datos](https://data.oecd.org/government.htm){target="_blank"} datos que recopila y publica la [OECD](https://www.oecd.org){target="_blank"}. Todas las variables analizadas se miden como porcentaje con respecto al PIB.
 
-### Gastos 
-
-### Ingresos
-
-### Saldo fiscal
-
-### Deuda pública
-
-### Presión fiscal
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1
+#| include: false
+countries <-
+  c(DEU = "Alemania", ESP = "España",
+    FRA = "Francia", USA = "EE.UU.")
+
+read_oecd_csv <- function(path) {
+  read_csv(path, col_types = "cccccid_") |>
+    select(LOCATION, TIME, Value) |>
+    filter(LOCATION %in% names(countries), TIME >= 1995) |>
+    pivot_wider(names_from = LOCATION, values_from = Value) |>
+    rename(year = TIME)
+}
 ```
 
-You can add options to executable code like this 
+### Gastos 
 
 ```{r}
 #| echo: false
-2 * 2
+#| label: fig-oecd-expend
+#| fig-cap: Gastos del sector público, 1995-2021 (% sobre PIB).
+g_db <- read_oecd_csv("./data/oecd_expend.csv.bz2")
+g_db |>
+  pivot_longer(-year) |>
+  line_plot(labels = countries) +
+  theme(legend.position = "bottom")
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+### Ingresos
+
+```{r}
+#| echo: false
+#| label: fig-oecd-rev
+#| fig-cap: Ingresos del sector público, 1995-2021 (% sobre PIB).
+rev_db <- read_oecd_csv("./data/oecd_rev.csv.bz2")
+rev_db |>
+  pivot_longer(-year) |>
+  line_plot(labels = countries) +
+  theme(legend.position = "bottom")
+```
+
+
+### Saldo fiscal
+```{r}
+#| echo: false
+#| label: fig-oecd-deficit
+#| fig-cap: Saldo fiscal, 1995-2021 (% sobre PIB).
+def_db <- read_oecd_csv("./data/oecd_def.csv.bz2")
+def_db |>
+  pivot_longer(-year) |>
+  line_plot(labels = countries) +
+  theme(legend.position = "bottom")
+```
+
+### Deuda pública
+```{r}
+#| echo: false
+#| label: fig-oecd-debt
+#| fig-cap: Deuda pública, 1995-2021 (% sobre PIB).
+debt_db <- read_oecd_csv("./data/oecd_debt.csv.bz2")
+debt_db |>
+  pivot_longer(-year) |>
+  line_plot(labels = countries) +
+  theme(legend.position = "bottom")
+```
+
+
+### Presión fiscal
+
+```{r}
+#| echo: false
+#| label: fig-oecd-press
+#| fig-cap: Presión fiscal, 1995-2021 (% sobre PIB).
+tax_db <- read_oecd_csv("./data/oecd_tax.csv.bz2")
+tax_db |>
+  pivot_longer(-year) |>
+  line_plot(labels = countries) +
+  theme(legend.position = "bottom")
+```
+

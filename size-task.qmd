@@ -161,6 +161,26 @@ igae |> mutate(G = Gastos / PIB * 100) |>
 
 ```{r}
 #| echo: false
+#| label: tbl-spain-rev
+#| tbl-cap: Ingresos del sector público en España, 2018-2021.
+
+igae |> mutate(R = Ingresos / 1000, 
+               R_pct = Ingresos / PIB * 100) |>
+  select(year, R, R_pct) |>
+  filter(year >= 2018) |> 
+  kbl(digits = c(0, 0, 1),
+      col.names = c(
+        "Año", 
+        "Ingresos (billones de euros)",
+        "Ingresos (% sobre PIB)"
+      )) |>
+  kable_styling(bootstrap_options = tbl_options, 
+                font_size = 14)
+```
+
+
+```{r}
+#| echo: false
 #| label: fig-spain-rev
 #| fig-cap: Ingresos del sector público en España, 1995-2021 (% sobre PIB).
 
@@ -173,6 +193,50 @@ igae |> mutate(R = Ingresos / PIB * 100) |>
 
 ```{r}
 #| echo: false
+#| label: tbl-spain-taxes
+#| tbl-cap: Impuestos y cotizaciones sociales en España, 2018-2021 (billones de euros).
+
+igae |> mutate(Tx = TTotal / 1000, 
+               SS = CotSS / 1000, 
+               Tot = Tx + SS) |>
+  select(year, Tx, SS, Tot) |>
+  filter(year >= 2018) |> 
+  kbl(digits = c(0, 0, 0, 0),
+      col.names = c(
+        "Año", 
+        "Impuestos",
+        "Cotizaciones sociales",
+        "Impuestos y cotizaciones"
+      )) |>
+  kable_styling(bootstrap_options = tbl_options, 
+                font_size = 14)
+```
+
+```{r}
+#| echo: false
+#| label: tbl-spain-taxes-pct
+#| tbl-cap: Impuestos y cotizaciones sociales en España, 2018-2021 (% sobre ingresos totales).
+
+igae |> mutate(Tx = TTotal / Ingresos * 100, 
+               SS = CotSS / Ingresos * 100, 
+               Tot = Tx + SS) |>
+  select(year, Tx, SS, Tot) |>
+  filter(year >= 2018) |> 
+  kbl(digits = c(0, 1, 1, 1),
+      col.names = c(
+        "Año", 
+        "Impuestos",
+        "Cotizaciones sociales",
+        "Impuestos y cotizaciones"
+      )) |>
+  kable_styling(bootstrap_options = tbl_options, 
+                font_size = 14)
+```
+
+
+
+```{r}
+#| echo: false
 #| label: fig-spain-taxes
 #| fig-cap: Impuestos y cotizaciones sociales en España, 1995-2021 (% sobre total de ingresos).
 
@@ -181,6 +245,24 @@ igae |> mutate(T = (TTotal + CotSS) / Ingresos * 100) |>
   pivot_longer(T) |>
   line_plot()
 ```
+
+```{r}
+#| echo: false
+#| label: tbl-spain-press
+#| tbl-cap: Presión fiscal en España, 2018-2021 (% sobre PIB).
+
+igae |> mutate(PF = (TTotal + CotSS) / PIB * 100) |>
+  select(year, PF) |>
+  filter(year >= 2018) |> 
+  kbl(digits = c(0, 1),
+      col.names = c(
+        "Año", 
+        "Presión fiscal"
+      )) |>
+  kable_styling(bootstrap_options = tbl_options, 
+                font_size = 14)
+```
+
 
 ```{r}
 #| echo: false

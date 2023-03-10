@@ -114,6 +114,32 @@ line_plot <- function(data, labels = NULL) {
 En esta sección utilizamos los datos anuales proporcionados por la IGAE.
 
 ### Evolución del gasto público
+
+```{r}
+#| echo: false
+#| warning: false
+#| label: tbl-spain-expend
+#| tbl-cap: Gastos del sector público en España, 2018-2021.
+
+library(kableExtra)
+
+tbl_options <- c("striped", "hover", "condensed", "responsive")
+
+igae |> mutate(G = Gastos / 1000, 
+               G_pct = Gastos / PIB * 100) |>
+  select(year, G, G_pct) |>
+  filter(year >= 2018) |> 
+  kbl(digits = c(0, 0, 1),
+      col.names = c(
+        "Año", 
+        "Gastos (billones de euros)",
+        "Gastos (% sobre PIB)"
+      )) |>
+  kable_styling(bootstrap_options = tbl_options, 
+                font_size = 14)
+```
+
+
 ```{r}
 #| echo: false
 #| label: fig-spain-expend
@@ -125,18 +151,6 @@ igae |> mutate(G = Gastos / PIB * 100) |>
   line_plot()
 ```
 
-```{r}
-#| echo: false
-#| warning: false
-
-library(kableExtra)
-igae |> mutate(G = Gastos / 1000, 
-               G_pct = Gastos / PIB * 100) |>
-  select(year, G, G_pct) |>
-  filter(year >= 2018) |> 
-  kbl(digits = c(0, 0, 1)) |>
-  kable_styling()
-```
 
 
 ### Gastos de las diferentes administraciones

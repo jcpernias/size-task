@@ -79,6 +79,30 @@ sum_cofog <- bind_rows(cofog[-1]) |>
   pivot_wider(names_from = name, values_from = value)
 
 
+map(gov_levels[-1], function(lev) {
+  cofog[[lev]] |>
+    filter(year == 2019) |>
+    mutate(level = lev)
+}) |>
+  append(list(sum_cofog |> filter(year == 2019) |>
+                mutate(level = "AA.PP."))) |>
+  bind_rows() |>
+  mutate(G01 = G01 / GTot * 100,
+         G02 = G02 / GTot * 100,
+         G03 = G03 / GTot * 100,
+         G04 = G04 / GTot * 100,
+         G05 = G05 / GTot * 100,
+         G06 = G06 / GTot * 100,
+         G07 = G07 / GTot * 100,
+         G08 = G08 / GTot * 100,
+         G09 = G09 / GTot * 100,
+         G10 = G10 / GTot * 100) |>
+  select(-c(year, GTot)) |>
+  pivot_longer(starts_with("G")) |>
+  pivot_wider(names_from = level, values_from = value)
+
+
+
 library(RColorBrewer)
 theme_set(theme_bw())
 

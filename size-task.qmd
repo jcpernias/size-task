@@ -122,7 +122,7 @@ En esta sección utilizamos los datos anuales proporcionados por la IGAE.
 #| tbl-cap: Gastos del sector público en España, 2018-2021.
 
 library(kableExtra)
-
+options(knitr.kable.NA = '')
 tbl_options <- c("striped", "hover", "condensed", "responsive")
 
 igae |> mutate(G = Gastos / 1000, 
@@ -151,11 +151,128 @@ igae |> mutate(G = Gastos / PIB * 100) |>
   line_plot()
 ```
 
-
-
 ### Gastos de las diferentes administraciones
 
+```{r}
+#| include: false
+
+# IGAE data: COFOG
+# Do not include transfers between government levels
+read_cofog <- function(level) {
+  cofog_vars <-
+    tibble(row = c(7, 15, 16, 22, 29, 39, 46, 53, 60, 67, 76),
+           vname = c("G01", "G01.8", "G02", "G03", "G04", "G05",
+                     "G06", "G07", "G08", "G09", "G10"))
+
+  read.xlsx("./data/COFOG.xlsx", level,
+            colNames = TRUE,
+            rows = c(6, cofog_vars$row)) |>
+    mutate(vnames = cofog_vars$vname) |>
+    select(-c("Código", "Grupo")) |>
+    rename("2021" = "2021.(P)") |>
+    pivot_longer(cols = 1:27, names_to = "year") |>
+    mutate(year = as.integer(year)) |>
+    pivot_wider(names_from = vnames, names_sep = "_",
+                values_from = value) |>
+    mutate(G01 = G01 - coalesce(G01.8, 0))  |>
+    select(-G01.8) |>
+    rowwise() |>
+    mutate(GTot = sum(c_across(G01:G10), na.rm = TRUE))
+}
+
+# List of expenditures by level
+gov_levels <- c("AA.PP.", "AA.CC.", "CC.AA.", "CC.LL.", "AA.SS.")
+cofog <- map(set_names(gov_levels), read_cofog)
+
+# Total expenditures
+sum_cofog <- bind_rows(cofog[-1]) |>
+  pivot_longer(G01:GTot) |>
+  group_by(year, name) |>
+  summarise(value = sum(value,  na.rm = TRUE), .groups = "drop") |>
+  pivot_wider(names_from = name, values_from = value)
+```
+
+```{r}
+#| echo: false
+#| label: tbl-spain-exp-level
+#| tbl-cap: Gastos por nivel de gobierno, 2018-2021 (% sobre gasto total).
+
+map(gov_levels[-1], function(lev) {
+  cofog[[lev]] |> 
+    select(year, GTot) |> 
+    filter(year >= 2018) |> 
+    mutate(level = lev)
+}) |> 
+  bind_rows() |> 
+  pivot_wider(names_from = level, values_from = GTot) |> 
+  left_join(sum_cofog |> select(year, GTot), by = "year") |> 
+  transmute("Año" = year,
+            "Administración central" = AA.CC. / GTot * 100,
+            "Comunidades autónomas" = CC.AA. / GTot * 100,
+            "Corporaciones locales" = CC.LL. / GTot * 100,
+            "Seguridad social" = AA.SS. / GTot * 100) |> 
+  kbl(digits = c(0, 1, 1, 1, 1)) |>
+  kable_styling(bootstrap_options = tbl_options, 
+                font_size = 14)
+```
+
+
 ### Clasificación funcional de los gastos
+
+```{r}
+#| echo: false
+#| label: tbl-spain-cofog
+#| tbl-cap: Gastos por grupo COFOG en España, 2019 (% sobre gasto total de cada nivel de administración).
+
+cofog_names <- c(
+  G01 = "Servicios públicos generales",
+  G02 = "Defensa",
+  G03 = "Orden público y seguridad",
+  G04 = "Asuntos económicos",
+  G05 = "Protección del medio ambiente",
+  G06 = "Vivienda y servicios comunitarios",
+  G07 = "Salud",
+  G08 = "Ocio, cultura y religión",
+  G09 = "Educación",
+  G10 = "Protección social")
+
+map(gov_levels[-1], function(lev) {
+  cofog[[lev]] |> 
+    filter(year == 2019) |> 
+    mutate(level = lev)
+}) |> 
+  append(list(sum_cofog |> filter(year == 2019) |> 
+                mutate(level = "AA.PP."))) |> 
+  bind_rows() |> 
+  mutate(
+    G01 = G01 / GTot * 100,
+    G02 = G02 / GTot * 100,
+    G03 = G03 / GTot * 100,
+    G04 = G04 / GTot * 100,
+    G05 = G05 / GTot * 100,
+    G06 = G06 / GTot * 100,
+    G07 = G07 / GTot * 100,
+    G08 = G08 / GTot * 100,
+    G09 = G09 / GTot * 100,
+    G10 = G10 / GTot * 100) |> 
+  select(-c(year, GTot)) |>
+  pivot_longer(starts_with("G")) |> 
+  pivot_wider(names_from = level, values_from = value) |> 
+  mutate(name = cofog_names[name]) |> 
+  kbl(digits = c(0, 1, 1, 1, 1, 1),
+      col.names = c(
+        "Grupo COFOG",
+        "Administración central",
+        "Comunidades autónomas",
+        "Corporaciones locales",
+        "Seguridad social",
+        "Total sector público"
+        )) |>
+  kable_styling(bootstrap_options = tbl_options, 
+                font_size = 14)
+
+```
+
 
 ### Evolución de los ingresos del sector público
 

@@ -258,15 +258,16 @@ map(gov_levels[-1], function(lev) {
   select(-c(year, GTot)) |>
   pivot_longer(starts_with("G")) |> 
   pivot_wider(names_from = level, values_from = value) |> 
+  relocate(AA.PP., .before = AA.CC.) |> 
   mutate(name = cofog_names[name]) |> 
   kbl(digits = c(0, 1, 1, 1, 1, 1),
       col.names = c(
         "Grupo COFOG",
+        "Total sector público",
         "Administración central",
         "Comunidades autónomas",
         "Corporaciones locales",
-        "Seguridad social",
-        "Total sector público"
+        "Seguridad social"
         )) |>
   kable_styling(bootstrap_options = tbl_options, 
                 font_size = 14)

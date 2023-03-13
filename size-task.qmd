@@ -1,17 +1,17 @@
 ---
 title: "Delimitación del sector público"
 author: "José Pernías"
-crossref: 
-  fig-title: "Figura"      
-  tbl-title: "Tabla"  
-  title-delim: ":"     
+lang: es
+
+language: 
+  title-block-author-single: "Autor"
+  toc-title-document: "Tabla de contenidos"
 
 format: 
   html:
     toc: true
     toc-depth: 3
     toc-location: left
-    toc-title: Índice
     number-sections: true
     number-depth: 2
     embed-resources: true

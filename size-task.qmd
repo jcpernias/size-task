@@ -1,6 +1,7 @@
 ---
 title: "Delimitación del sector público"
 author: "José Pernías"
+date: "`r Sys.Date()`"
 lang: es
 engine: knitr
 

@@ -13,12 +13,13 @@ format:
     toc-depth: 3
     toc-location: left
     number-sections: true
-    number-depth: 2
+    number-depth: 3
     embed-resources: true
     fig-cap-location: top
     anchor-sections: false
     fig-width: 7
     fig-height: 4
+    theme: simplex
 ---
 
 ```{r igae-data}
@@ -215,7 +216,6 @@ map(gov_levels[-1], function(lev) {
   kable_styling(bootstrap_options = tbl_options, 
                 font_size = 14)
 ```
-
 
 ### Clasificación funcional de los gastos
 

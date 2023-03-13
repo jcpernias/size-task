@@ -2,6 +2,7 @@
 title: "Delimitación del sector público"
 author: "José Pernías"
 lang: es
+engine: knitr
 
 language: 
   title-block-author-single: "Autor"
@@ -21,6 +22,20 @@ format:
     fig-height: 4
     theme: simplex
 ---
+
+```{css}
+#| echo: false
+
+caption, .figure-caption, .column-margin {
+  color: #5a6570;
+  text-align: left;
+  font-size: 0.85rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.5rem;
+}
+
+```
+
 
 ```{r igae-data}
 #| include: false
@@ -139,6 +154,9 @@ igae |> mutate(G = Gastos / 1000,
   kable_styling(bootstrap_options = tbl_options, 
                 font_size = 14)
 ```
+::: {.column-margin}
+Los datos correspondientes al año 2021 son provisionales. Fuente de los datos: IGAE.
+:::
 
 
 ```{r}
